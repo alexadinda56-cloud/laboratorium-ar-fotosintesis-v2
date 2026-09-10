@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorium AR — Fotosintesis</title>
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+<style>
+:root{
+  --green:#176b45; --green2:#2d8b5f; --light:#eef8f0; --text:#18352a;
+  --muted:#60756a; --white:#fff; --shadow:0 12px 35px rgba(20,70,45,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#eaf7ee 0,#fff 48%);font-family:Arial,sans-serif;color:var(--text)}
+.wrap{max-width:1120px;margin:auto;padding:22px}
+.hero{display:flex;justify-content:space-between;gap:20px;align-items:center;background:rgba(255,255,255,.94);padding:22px 24px;border-radius:24px;box-shadow:var(--shadow);margin-bottom:18px}
+.badge{display:inline-block;background:#e7f5eb;color:var(--green);font-weight:700;padding:7px 11px;border-radius:999px;font-size:13px;margin-bottom:8px}
+h1{margin:0 0 7px;font-size:30px}
+.subtitle{margin:0;color:var(--muted);line-height:1.55}
+.formula{font-size:18px;font-weight:800;white-space:nowrap;background:#f5fbf6;padding:14px 16px;border-radius:16px}
+
+.lab{display:grid;grid-template-columns:1fr 330px;gap:18px}
+.viewer{position:relative;overflow:hidden;border-radius:24px;background:#dff2e1;box-shadow:var(--shadow);min-height:650px}
+model-viewer{width:100%;height:650px;background:linear-gradient(#dff5ff 0 54%,#dcefd7 54%);--poster-color:transparent}
+model-viewer::part(default-ar-button){display:none}
+
+.ar-btn{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);border:0;border-radius:999px;padding:14px 20px;background:var(--green);color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.2);z-index:8}
+.ar-btn:hover{background:#0f5737}
+
+.particle{position:absolute;z-index:5;font-weight:800;pointer-events:none;opacity:0}
+.particle.water{color:#1877c9}.particle.co2{color:#6b57a5}.particle.sun{color:#b47a00}.particle.o2{color:#168a65}.particle.sugar{color:#b45b16}
+.particle.w1{left:11%;bottom:20%;animation:water 4s infinite}.particle.w2{left:16%;bottom:17%;animation:water 4s .7s infinite}
+.particle.c1{right:12%;top:45%;animation:co2 4s infinite}.particle.c2{right:8%;top:51%;animation:co2 4s 1.2s infinite}
+.particle.s1{left:18%;top:12%;animation:sun 3s infinite}.particle.s2{left:28%;top:20%;animation:sun 3s .8s infinite}
+.particle.o1{right:24%;top:28%;animation:o2 4s infinite}.particle.o2{right:19%;top:35%;animation:o2 4s 1s infinite}
+@keyframes water{0%{opacity:0;transform:translate(0,30px)}15%{opacity:1}100%{opacity:0;transform:translate(115px,-260px)}}
+@keyframes co2{0%{opacity:0;transform:translate(40px,0)}20%{opacity:1}100%{opacity:0;transform:translate(-180px,0)}}
+@keyframes sun{0%{opacity:0;transform:translate(20px,-20px)}25%{opacity:1}100%{opacity:0;transform:translate(100px,180px)}}
+@keyframes o2{0%{opacity:0;transform:translate(-20px,40px)}20%{opacity:1}100%{opacity:0;transform:translate(150px,-100px)}}
+
+.panel{background:#fff;border-radius:24px;padding:18px;box-shadow:var(--shadow);height:max-content}
+.panel h2{font-size:19px;margin:0 0 5px}
+.panel .small{font-size:13px;color:var(--muted);line-height:1.45;margin:0 0 15px}
+.steps{display:grid;gap:9px}
+.step{width:100%;border:1px solid #dbe9df;background:#f8fcf9;border-radius:15px;padding:12px;text-align:left;cursor:pointer;display:flex;gap:11px;align-items:center;color:var(--text)}
+.step.active{background:#eaf7ee;border-color:#9bc9aa;box-shadow:inset 4px 0 var(--green)}
+.icon{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:#fff;font-size:18px;flex:none}
+.step b{display:block;font-size:14px;margin-bottom:2px}.step span{font-size:12px;color:var(--muted)}
+.lesson{margin-top:15px;background:#f3faf4;border-radius:17px;padding:14px}
+.lesson h3{margin:0 0 6px;font-size:15px}.lesson p{margin:0;font-size:13px;line-height:1.55;color:#4f6659}
+.legend{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.legend div{background:#fafdfb;border:1px solid #e4eee7;border-radius:12px;padding:9px;font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+.bottom{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:#fff;border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 10px;font-size:18px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{background:#eff8f1;padding:9px 12px;border-radius:999px;font-weight:700;font-size:13px}
+.arrow{font-weight:800;color:var(--green)}
+.tip{color:var(--muted);font-size:13px;line-height:1.5;margin:8px 0 0}
+
+@media(max-width:850px){
+ .hero{display:block}.formula{margin-top:14px;white-space:normal}
+ .lab{grid-template-columns:1fr}.viewer,model-viewer{min-height:500px;height:500px}
+ .bottom{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <span class="badge">🔬 LABORATORIUM DIGITAL</span>
+      <h1>Laboratorium AR Fotosintesis</h1>
+      <p class="subtitle">Jelajahi tanaman dalam 3D dan ikuti perjalanan bahan yang diperlukan sampai terbentuk makanan bagi tumbuhan.</p>
+    </div>
+    <div class="formula">☀️ + 💧 H₂O + 🌬️ CO₂ → 🍬 Glukosa + 🫧 O₂</div>
+  </section>
+
+  <section class="lab">
+    <div class="viewer">
+      <model-viewer id="plant"
+        src="./tanaman_fotosintesis_3d.glb"
+        alt="Model 3D tanaman untuk pembelajaran fotosintesis"
+        camera-controls auto-rotate rotation-per-second="22deg"
+        shadow-intensity="1" exposure="1"
+        ar ar-modes="webxr scene-viewer quick-look"
+        camera-orbit="25deg 75deg 5m" camera-target="0m 1.55m 0m"
+        min-camera-orbit="auto auto 1m" max-camera-orbit="auto auto 8m">
+        <button class="ar-btn" slot="ar-button">📱 Lihat dalam AR</button>
+      </model-viewer>
+
+      <div class="particle water w1">💧 H₂O</div><div class="particle water w2">💧</div>
+      <div class="particle co2 c1">CO₂ 🌬️</div><div class="particle co2 c2">CO₂</div>
+      <div class="particle sun s1">☀️</div><div class="particle sun s2">☀️</div>
+      <div class="particle o2 o1">O₂ 🫧</div><div class="particle o2 o2">O₂</div>
+    </div>
+
+    <aside class="panel">
+      <h2>🧭 Jelajahi Proses</h2>
+      <p class="small">Klik tahap di bawah untuk melihat penjelasan. Animasi partikel akan membantu menggambarkan arah proses.</p>
+
+      <div class="steps">
+        <button class="step active" data-title="1. Air diserap akar" data-text="Akar menyerap air (H₂O) dari tanah. Air kemudian bergerak melalui batang menuju daun.">
+          <div class="icon">💧</div><div><b>Air diserap akar</b><span>H₂O dari tanah</span></div>
+        </button>
+        <button class="step" data-title="2. Air menuju daun" data-text="Batang membantu mengangkut air dari akar ke bagian tumbuhan, terutama menuju daun.">
+          <div class="icon">🌿</div><div><b>Air menuju daun</b><span>Melalui batang</span></div>
+        </button>
+        <button class="step" data-title="3. CO₂ masuk ke daun" data-text="Karbon dioksida (CO₂) dari udara masuk ke daun melalui stomata.">
+          <div class="icon">🌬️</div><div><b>CO₂ masuk</b><span>Dari udara ke daun</span></div>
+        </button>
+        <button class="step" data-title="4. Cahaya ditangkap daun" data-text="Klorofil pada daun membantu menangkap energi cahaya matahari yang diperlukan untuk fotosintesis.">
+          <div class="icon">☀️</div><div><b>Cahaya matahari</b><span>Energi fotosintesis</span></div>
+        </button>
+        <button class="step" data-title="5. Fotosintesis terjadi" data-text="Di dalam sel daun, tumbuhan menggunakan energi cahaya untuk mengolah air dan karbon dioksida menjadi glukosa serta oksigen.">
+          <div class="icon">🍃</div><div><b>Fotosintesis</b><span>Terjadi di daun</span></div>
+        </button>
+        <button class="step" data-title="6. O₂ dan glukosa dihasilkan" data-text="Glukosa menjadi sumber makanan/energi bagi tumbuhan, sedangkan oksigen dilepaskan ke udara.">
+          <div class="icon">🍬</div><div><b>Hasil fotosintesis</b><span>Glukosa + O₂</span></div>
+        </button>
+      </div>
+
+      <div class="lesson">
+        <h3 id="lessonTitle">1. Air diserap akar</h3>
+        <p id="lessonText">Akar menyerap air (H₂O) dari tanah. Air kemudian bergerak melalui batang menuju daun.</p>
+      </div>
+
+      <div class="legend">
+        <div><span class="dot" style="background:#1877c9"></span>Air (H₂O)</div>
+        <div><span class="dot" style="background:#6b57a5"></span>CO₂</div>
+        <div><span class="dot" style="background:#b47a00"></span>Cahaya</div>
+        <div><span class="dot" style="background:#168a65"></span>O₂</div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="bottom">
+    <div class="card">
+      <h2>🧪 Ringkasan Reaksi</h2>
+      <div class="flow">
+        <span class="pill">☀️ Cahaya</span><span class="arrow">+</span>
+        <span class="pill">💧 H₂O</span><span class="arrow">+</span>
+        <span class="pill">🌬️ CO₂</span><span class="arrow">→</span>
+        <span class="pill">🍬 Glukosa</span><span class="arrow">+</span>
+        <span class="pill">🫧 O₂</span>
+      </div>
+      <p class="tip">Intinya: tumbuhan menggunakan energi cahaya, air, dan karbon dioksida untuk membuat makanan (glukosa) dan melepaskan oksigen.</p>
+    </div>
+    <div class="card">
+      <h2>🎯 Tantangan Pengamatan</h2>
+      <p class="tip">Coba putar tanaman. Temukan akar, batang, dan daun. Setelah itu, jawab: <b>“Dari mana air berasal dan ke bagian mana air dibawa sebelum digunakan dalam fotosintesis?”</b></p>
+    </div>
+  </section>
+</div>
+
+<script>
+const buttons = document.querySelectorAll('.step');
+const title = document.getElementById('lessonTitle');
+const text = document.getElementById('lessonText');
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    title.textContent = btn.dataset.title;
+    text.textContent = btn.dataset.text;
+  });
+});
+</script>
+</body>
+</html>
