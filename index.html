@@ -1,139 +1,740 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laboratorium AR Fotosintesis</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { display: flex; height: 100vh; overflow: hidden; background-color: #f4f6f8; }
-    #canvas-container { flex: 1; position: relative; background: linear-gradient(to bottom, #e0f7fa 60%, #d7ccc8 60%); }
-    #sidebar { width: 340px; background: #ffffff; border-left: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
-    h2 { font-size: 1.2rem; color: #2e7d32; margin-bottom: 15px; }
-    .step-btn { background: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; text-align: left; transition: all 0.2s; }
-    .step-btn:hover, .step-btn.active { background: #a5d6a7; border-color: #4caf50; font-weight: bold; }
-    .info-box { margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 8px; font-size: 0.9rem; color: #1b5e20; }
-  </style>
-  <!-- Three.js CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Petualangan Fotosintesis 3D - Kelas SD</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Three.js & OrbitControls CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- OrbitControls agar model bisa diputar/dizoom -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Ceria */
+    header {
+      background: #ffffffd0;
+      backdrop-filter: blur(8px);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      z-index: 10;
+      border-bottom: 3px solid #86efac;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand i {
+      font-size: 2rem;
+      color: #22c55e;
+      background: #dcfce7;
+      padding: 10px;
+      border-radius: 16px;
+    }
+
+    .brand h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.5rem;
+      color: #15803d;
+    }
+
+    .brand span {
+      font-size: 0.85rem;
+      color: #166534;
+      background: #fef08a;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    /* Main Container Layout */
+    .app-container {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      cursor: grab;
+    }
+
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+
+    /* Interactive Helper Overlay */
+    .view-controls {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 5;
+    }
+
+    .btn-ctrl {
+      background: white;
+      border: 2px solid #bbf7d0;
+      color: #166534;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-ctrl:hover {
+      background: #dcfce7;
+      transform: translateY(-2px);
+    }
+
+    /* Sidebar Tahapan Interaktif */
+    .sidebar {
+      width: 380px;
+      background: #ffffff;
+      border-left: 3px solid #f0fdf4;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 16px;
+      box-shadow: -5px 0 25px rgba(0,0,0,0.04);
+      z-index: 8;
+      overflow-y: auto;
+    }
+
+    .sidebar-title {
+      font-family: 'Fredoka', sans-serif;
+      color: #0f766e;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step-card {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .step-card:hover {
+      border-color: #86efac;
+      background: #f0fdf4;
+      transform: translateX(-4px);
+    }
+
+    .step-card.active {
+      background: #dcfce7;
+      border-color: #22c55e;
+      box-shadow: 0 6px 16px rgba(34, 197, 94, 0.2);
+      transform: scale(1.02);
+    }
+
+    .step-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
+
+    .step-card.active .step-badge {
+      background: #22c55e;
+      color: white;
+    }
+
+    .step-info h4 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+
+    .step-info p {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    /* Card Penjelasan Utama */
+    .explanation-box {
+      background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+      border: 2px solid #fde047;
+      border-radius: 20px;
+      padding: 16px;
+      color: #713f12;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(234, 179, 8, 0.15);
+    }
+
+    .explanation-box h3 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      color: #854d0e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .explanation-box p {
+      font-size: 0.9rem;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    .chemical-badge {
+      display: inline-block;
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: bold;
+      color: #15803d;
+      font-size: 0.85rem;
+      margin-top: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* Banner Petunjuk Putar 3D */
+    .hint-toast {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(6px);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.9; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Responsive untuk Tablet / Embed Kecil */
+    @media (max-width: 900px) {
+      .app-container {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: 250px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <div id="canvas-container"></div>
-
-  <div id="sidebar">
-    <h2>Tahapan Fotosintesis</h2>
-    <button class="step-btn active" onclick="selectStep(1)">1. Air Diserap Akar</button>
-    <button class="step-btn" onclick="selectStep(2)">2. Air Menuju Daun</button>
-    <button class="step-btn" onclick="selectStep(3)">3. CO₂ Masuk Daun</button>
-    <button class="step-btn" onclick="selectStep(4)">4. Cahaya Matahari</button>
-    <button class="step-btn" onclick="selectStep(5)">5. Hasil Fotosintesis</button>
-
-    <div class="info-box" id="info-text">
-      <strong>1. Air Diserap Akar:</strong> Akar menyerap air (H₂O) dari dalam tanah untuk disalurkan ke seluruh bagian tumbuhan.
+  <!-- Header Edukasi SD -->
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-seedling"></i>
+      <div>
+        <h1>Lab 3D Fotosintesis</h1>
+      </div>
+      <span>Sains SD 🌿</span>
     </div>
+    <div style="font-size: 0.85rem; color: #475569; font-weight: 600;">
+      <i class="fa-solid fa-wand-magic-sparkles" style="color:#eab308"></i> Klik Tiap Tahap di Samping!
+    </div>
+  </header>
+
+  <!-- Container Utama -->
+  <div class="app-container">
+    
+    <!-- Area Canvas 3D -->
+    <div id="canvas-container">
+      <div class="view-controls">
+        <button class="btn-ctrl" onclick="resetCamera()">
+          <i class="fa-solid fa-arrows-rotate"></i> Riset Tampilan
+        </button>
+        <button class="btn-ctrl" id="btn-auto-rotate" onclick="toggleAutoRotate()">
+          <i class="fa-solid fa-rotate"></i> Putar Otomatis: On
+        </button>
+      </div>
+
+      <div class="hint-toast">
+        <i class="fa-solid fa-hand-pointer"></i> Geser layar untuk memutar tumbuhan 3D!
+      </div>
+    </div>
+
+    <!-- Sidebar Tahapan Pembelajaran -->
+    <div class="sidebar">
+      <div class="sidebar-title">
+        <i class="fa-solid fa-list-check"></i> Tahapan Proses Fotosintesis
+      </div>
+
+      <div class="steps-list">
+        <div class="step-card active" onclick="setStep(1)" id="step-btn-1">
+          <div class="step-badge">1</div>
+          <div class="step-info">
+            <h4>Penyerapan Air (H₂O)</h4>
+            <p>Akar menyerap air dari tanah</p>
+          </div>
+          <i class="fa-solid fa-droplet" style="color:#0284c7; margin-left:auto;"></i>
+        </div>
+
+        <div class="step-card" onclick="setStep(2)" id="step-btn-2">
+          <div class="step-badge">2</div>
+          <div class="step-info">
+            <h4>Air Naik Ke Daun</h4>
+            <p>Air mengalir lewat batang</p>
+          </div>
+          <i class="fa-solid fa-arrow-up-long" style="color:#16a34a; margin-left:auto;"></i>
+        </div>
+
+        <div class="step-card" onclick="setStep(3)" id="step-btn-3">
+          <div class="step-badge">3</div>
+          <div class="step-info">
+            <h4>Masuknya CO₂</h4>
+            <p>Gas karbon dioksida dihirup daun</p>
+          </div>
+          <i class="fa-solid fa-wind" style="color:#64748b; margin-left:auto;"></i>
+        </div>
+
+        <div class="step-card" onclick="setStep(4)" id="step-btn-4">
+          <div class="step-badge">4</div>
+          <div class="step-info">
+            <h4>Sinar Matahari</h4>
+            <p>Energi cahaya diserap klorofil</p>
+          </div>
+          <i class="fa-solid fa-sun" style="color:#eab308; margin-left:auto;"></i>
+        </div>
+
+        <div class="step-card" onclick="setStep(5)" id="step-btn-5">
+          <div class="step-badge">5</div>
+          <div class="step-info">
+            <h4>Hasil: Oksigen & Glukosa</h4>
+            <p>Tumbuhan menghasilkan makanan & O₂</p>
+          </div>
+          <i class="fa-solid fa-apple-whole" style="color:#dc2626; margin-left:auto;"></i>
+        </div>
+      </div>
+
+      <!-- Kotak Penjelasan Detail -->
+      <div class="explanation-box" id="explain-box">
+        <h3 id="explain-title">
+          <i class="fa-solid fa-droplet"></i> 1. Air Diserap Akar
+        </h3>
+        <p id="explain-text">
+          Akar tumbuhan bertugas menyerap <strong>air (H₂O)</strong> dan zat hara dari dalam tanah. Air ini sangat penting sebagai bahan baku utama fotosintesis!
+        </p>
+        <div id="explain-formula">
+          <span class="chemical-badge">💧 Air = H₂O</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 
+  <!-- JavaScript Three.js Interactive Logic -->
   <script>
-    // 1. Setup Scene, Camera, Renderer
+    // --- 1. SETUP SCENE, CAMERA, RENDERER ---
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe0f2fe); // Warna langit segar
+
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(0, 2, 12);
+    camera.position.set(0, 3, 11);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 + 0.1; // Batas sudut bawah agar tidak tembus tanah
+    controls.minDistance = 5;
+    controls.maxDistance = 18;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.0;
 
-    // 2. Pencahayaan
+    // --- 2. PENCAHAYAAN TERANG & CERIA ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(5, 12, 8);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+    sunLight.position.set(6, 10, 5);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    scene.add(sunLight);
 
-    // 3. Objek 3D Pohon & Tanah (Rapi)
-    const plantGroup = new THREE.Group();
+    // --- 3. PEMBUATAN OBJEK 3D (TUMBUHAN, AKAR, MATAHARI & TANAH) ---
+    const mainGroup = new THREE.Group();
 
-    // Permukaan Tanah
-    const groundGeo = new THREE.CylinderGeometry(4, 4, 0.2, 32);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.position.y = -1;
-    plantGroup.add(ground);
+    // A. Tanah & Rumput
+    const soilGeo = new THREE.CylinderGeometry(3.8, 3.8, 2.2, 32);
+    const soilMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 });
+    const soil = new THREE.Mesh(soilGeo, soilMat);
+    soil.position.y = -1.1;
+    soil.receiveShadow = true;
+    mainGroup.add(soil);
 
-    // Batang Utama
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 4, 16);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+    const grassGeo = new THREE.CylinderGeometry(3.85, 3.85, 0.3, 32);
+    const grassMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 });
+    const grass = new THREE.Mesh(grassGeo, grassMat);
+    grass.position.y = 0.05;
+    grass.receiveShadow = true;
+    mainGroup.add(grass);
+
+    // B. Batang Utama
+    const trunkGeo = new THREE.CylinderGeometry(0.28, 0.38, 3.2, 16);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.y = 1;
-    plantGroup.add(trunk);
+    trunk.position.y = 1.6;
+    trunk.castShadow = true;
+    mainGroup.add(trunk);
 
-    // Daun (Kanopi Rindang)
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, flatShading: true });
-    
-    function createLeafCluster(x, y, z, scale) {
-      const leafGeo = new THREE.DodecahedronGeometry(scale);
-      const leafMesh = new THREE.Mesh(leafGeo, leafMat);
-      leafMesh.position.set(x, y, z);
-      plantGroup.add(leafMesh);
+    // C. Dedaunan Rindang (Kartun Ceria)
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.4, flatShading: true });
+    const leafHighlightMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.4, flatShading: true });
+
+    function addLeafSphere(x, y, z, r, isHighlight = false) {
+      const geo = new THREE.DodecahedronGeometry(r, 1);
+      const mesh = new THREE.Mesh(geo, isHighlight ? leafHighlightMat : leafMat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mainGroup.add(mesh);
     }
 
-    createLeafCluster(0, 3.2, 0, 1.2);
-    createLeafCluster(-0.8, 2.8, 0.5, 0.9);
-    createLeafCluster(0.8, 2.8, -0.5, 0.9);
-    createLeafCluster(0, 2.7, -0.8, 0.8);
+    addLeafSphere(0, 3.8, 0, 1.3);
+    addLeafSphere(-0.9, 3.3, 0.6, 0.95, true);
+    addLeafSphere(0.9, 3.4, -0.5, 0.95);
+    addLeafSphere(0, 3.5, -0.9, 0.85);
+    addLeafSphere(-0.6, 3.9, -0.4, 0.8);
 
-    // Akar (Di bawah tanah)
-    const rootMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
-    function createRoot(rotZ, posX) {
-      const rootGeo = new THREE.ConeGeometry(0.1, 1.5, 8);
+    // D. Akar Tumbuhan (Terlihat Rapi di Dalam Tanah)
+    const rootMat = new THREE.MeshStandardMaterial({ color: 0x542609, roughness: 0.9 });
+    function addRootBranch(x, z, rotZ, scaleY) {
+      const rootGeo = new THREE.ConeGeometry(0.12, scaleY, 8);
       const root = new THREE.Mesh(rootGeo, rootMat);
-      root.position.set(posX, -1.6, 0);
+      root.position.set(x, -0.9 - (scaleY/2), z);
       root.rotation.z = rotZ;
-      plantGroup.add(root);
+      mainGroup.add(root);
     }
 
-    createRoot(0.5, -0.4);
-    createRoot(-0.5, 0.4);
-    createRoot(0.2, -0.1);
+    addRootBranch(-0.6, 0.2, 0.4, 1.4);
+    addRootBranch(0.6, -0.2, -0.4, 1.5);
+    addRootBranch(0.1, 0.6, -0.1, 1.2);
+    addRootBranch(-0.2, -0.6, 0.2, 1.3);
 
-    scene.add(plantGroup);
+    // E. Matahari Kartun Bersinar
+    const sunGroup = new THREE.Group();
+    const sunMeshGeo = new THREE.SphereGeometry(0.9, 16, 16);
+    const sunMeshMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    const sunMesh = new THREE.Mesh(sunMeshGeo, sunMeshMat);
+    sunGroup.add(sunMesh);
 
-    // 4. Penjelasan Tiap Langkah
-    const stepInfo = {
-      1: "<strong>1. Air Diserap Akar:</strong> Akar menyerap air (H₂O) dari dalam tanah untuk disalurkan ke bagian tumbuhan.",
-      2: "<strong>2. Air Menuju Daun:</strong> Air naik melalui pembuluh kayu (xilem) di batang menuju ke daun.",
-      3: "<strong>3. CO₂ Masuk Daun:</strong> Karbon dioksida (CO₂) dari udara masuk ke dalam daun melalui stomata.",
-      4: "<strong>4. Cahaya Matahari:</strong> Klorofil pada daun menyerap energi cahaya matahari untuk proses reaksi.",
-      5: "<strong>5. Hasil Fotosintesis:</strong> Reaksi menghasilkan Glukosa (makanan) dan Oksigen (O₂) yang dilepas ke udara."
+    // Cincin Cahaya Matahari
+    const rayGeo = new THREE.RingGeometry(1.1, 1.3, 12);
+    const rayMat = new THREE.MeshBasicMaterial({ color: 0xfde047, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+    const rayMesh = new THREE.Mesh(rayGeo, rayMat);
+    sunGroup.add(rayMesh);
+
+    sunGroup.position.set(4.5, 6, -2);
+    scene.add(sunGroup);
+
+    // F. Awan Kartun Lucu
+    function createCloud(x, y, z) {
+      const cloud = new THREE.Group();
+      const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+      const p1 = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 12), cloudMat);
+      const p2 = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), cloudMat);
+      p2.position.set(-0.5, -0.1, 0);
+      const p3 = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), cloudMat);
+      p3.position.set(0.5, -0.1, 0);
+      cloud.add(p1, p2, p3);
+      cloud.position.set(x, y, z);
+      scene.add(cloud);
+    }
+    createCloud(-5, 5.5, -4);
+    createCloud(5, 6.5, -5);
+
+    scene.add(mainGroup);
+
+    // --- 4. ANIMASI PARTIKEL PROSES FOTOSINTESIS ---
+    
+    // Partikel Air (H2O) - Biru
+    const waterParticlesCount = 35;
+    const waterGeo = new THREE.SphereGeometry(0.08, 8, 8);
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, roughness: 0.2 });
+    const waterGroup = new THREE.Group();
+
+    for(let i=0; i<waterParticlesCount; i++) {
+      const p = new THREE.Mesh(waterGeo, waterMat);
+      p.userData = {
+        speed: 0.015 + Math.random() * 0.02,
+        resetY: -1.8,
+        maxY: 0,
+        startX: (Math.random() - 0.5) * 2.2,
+        startZ: (Math.random() - 0.5) * 2.2
+      };
+      p.position.set(p.userData.startX, p.userData.resetY + Math.random()*1.5, p.userData.startZ);
+      waterGroup.add(p);
+    }
+    scene.add(waterGroup);
+
+    // Partikel Air Naik Batang (Step 2)
+    const stemWaterGroup = new THREE.Group();
+    for(let i=0; i<20; i++) {
+      const p = new THREE.Mesh(waterGeo, waterMat);
+      p.userData = {
+        speed: 0.02 + Math.random() * 0.02,
+        resetY: 0.1,
+        maxY: 3.2
+      };
+      p.position.set((Math.random()-0.5)*0.3, p.userData.resetY + Math.random()*3, (Math.random()-0.5)*0.3);
+      stemWaterGroup.add(p);
+    }
+    scene.add(stemWaterGroup);
+
+    // Partikel CO2 (Karbon Dioksida) - Abu/Putih Melayang Masuk
+    const co2Group = new THREE.Group();
+    const co2Geo = new THREE.SphereGeometry(0.09, 8, 8);
+    const co2Mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, emissive: 0x475569 });
+
+    for(let i=0; i<25; i++) {
+      const p = new THREE.Mesh(co2Geo, co2Mat);
+      p.userData = {
+        angle: Math.random() * Math.PI * 2,
+        radius: 3 + Math.random() * 2,
+        speed: 0.02 + Math.random() * 0.015,
+        targetY: 2.8 + Math.random() * 1.2
+      };
+      co2Group.add(p);
+    }
+    scene.add(co2Group);
+
+    // Sinar Cahaya Matahari (Step 4)
+    const sunRayGroup = new THREE.Group();
+    const rayLightGeo = new THREE.CylinderGeometry(0.04, 0.08, 6, 8);
+    const rayLightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.7 });
+
+    for(let i=0; i<6; i++) {
+      const ray = new THREE.Mesh(rayLightGeo, rayLightMat);
+      ray.position.set( sunGroup.position.x - i*0.6, sunGroup.position.y - 2, sunGroup.position.z + i*0.3 );
+      ray.rotation.z = 0.5;
+      sunRayGroup.add(ray);
+    }
+    scene.add(sunRayGroup);
+
+    // Partikel Hasil Fotosintesis (Oksigen O2 & Glukosa)
+    const o2Group = new THREE.Group(); // Gelembung O2 terbang ke atas
+    const o2Geo = new THREE.SphereGeometry(0.12, 8, 8);
+    const o2Mat = new THREE.MeshStandardMaterial({ color: 0xa7f3d0, transparent: true, opacity: 0.85 });
+
+    for(let i=0; i<25; i++) {
+      const p = new THREE.Mesh(o2Geo, o2Mat);
+      p.userData = {
+        speed: 0.02 + Math.random()*0.02,
+        startX: (Math.random()-0.5)*2,
+        startZ: (Math.random()-0.5)*2
+      };
+      p.position.set(p.userData.startX, 3.2 + Math.random()*1.5, p.userData.startZ);
+      o2Group.add(p);
+    }
+    scene.add(o2Group);
+
+    // --- 5. LOGIKA INTERAKSI & KONTROL STEP ---
+    let currentStep = 1;
+
+    const stepDetails = {
+      1: {
+        title: '<i class="fa-solid fa-droplet" style="color:#0284c7"></i> 1. Air Diserap Akar',
+        text: 'Akar tumbuhan bertugas menyerap <strong>air (H₂O)</strong> dan mineral dari dalam tanah. Air ini adalah bahan utama fotosintesis!',
+        formula: '<span class="chemical-badge">💧 Air = H₂O</span>'
+      },
+      2: {
+        title: '<i class="fa-solid fa-arrow-up-long" style="color:#16a34a"></i> 2. Air Naik Ke Daun',
+        text: 'Air yang diserap akar akan dialirkan ke atas melewati pembuluh kayu (xilem) di sepanjang batang hingga sampai ke helai daun.',
+        formula: '<span class="chemical-badge">🪵 Pengangkutan Jalur Xilem</span>'
+      },
+      3: {
+        title: '<i class="fa-solid fa-wind" style="color:#64748b"></i> 3. Gas CO₂ Masuk Daun',
+        text: 'Daun menyerap gas <strong>Karbon Dioksida (CO₂)</strong> dari udara sekitar melalui lubang-lubang kecil di daun yang disebut <strong>stomata</strong>.',
+        formula: '<span class="chemical-badge">🌫️ Karbon Dioksida = CO₂</span>'
+      },
+      4: {
+        title: '<i class="fa-solid fa-sun" style="color:#eab308"></i> 4. Sinar Matahari (Energi)',
+        text: 'Zat hijau daun (<strong>klorofil</strong>) menangkap energi cahaya matahari. Energi ini digunakan untuk memasak air dan CO₂!',
+        formula: '<span class="chemical-badge">☀️ Energi Cahaya Diserap Klorofil</span>'
+      },
+      5: {
+        title: '<i class="fa-solid fa-apple-whole" style="color:#dc2626"></i> 5. Hasil: Oksigen & Glukosa',
+        text: 'Proses masak selesai! Tumbuhan menghasilkan <strong>Glukosa (makanan/energi)</strong> dan melepaskan <strong>Oksigen (O₂)</strong> ke udara untuk kita bernapas!',
+        formula: '<span class="chemical-badge">✨ Hasil = Glukosa + Oksigen (O₂)</span>'
+      }
     };
 
-    function selectStep(step) {
-      document.getElementById('info-text').innerHTML = stepInfo[step];
-      const btns = document.querySelectorAll('.step-btn');
-      btns.forEach((btn, idx) => {
-        btn.classList.toggle('active', idx + 1 === step);
-      });
+    function setStep(step) {
+      currentStep = step;
+
+      // Update UI Sidebar active state
+      for(let i=1; i<=5; i++) {
+        const btn = document.getElementById(`step-btn-${i}`);
+        btn.classList.toggle('active', i === step);
+      }
+
+      // Update text info
+      const detail = stepDetails[step];
+      document.getElementById('explain-title').innerHTML = detail.title;
+      document.getElementById('explain-text').innerHTML = detail.text;
+      document.getElementById('explain-formula').innerHTML = detail.formula;
     }
 
-    // 5. Animation Loop & Responsive Window
+    function resetCamera() {
+      camera.position.set(0, 3, 11);
+      controls.target.set(0, 1.5, 0);
+      controls.update();
+    }
+
+    function toggleAutoRotate() {
+      controls.autoRotate = !controls.autoRotate;
+      document.getElementById('btn-auto-rotate').innerHTML = 
+        `<i class="fa-solid fa-rotate"></i> Putar Otomatis: ${controls.autoRotate ? 'On' : 'Off'}`;
+    }
+
+    // --- 6. ANIMATION LOOP ---
     function animate() {
       requestAnimationFrame(animate);
-      plantGroup.rotation.y += 0.003; // Rotasi perlahan
+
+      // Rotasi ringan aksesoris
+      rayMesh.rotation.z += 0.005;
+
+      // VISIBILITAS PARTIKEL SESUAI TAHAP
+      waterGroup.visible = (currentStep === 1);
+      stemWaterGroup.visible = (currentStep === 2);
+      co2Group.visible = (currentStep === 3);
+      sunRayGroup.visible = (currentStep === 4);
+      o2Group.visible = (currentStep === 5);
+
+      // Animasi Step 1: Air diserap akar
+      if(currentStep === 1) {
+        waterGroup.children.forEach(p => {
+          p.position.y += p.userData.speed;
+          if(p.position.y > p.userData.maxY) {
+            p.position.y = p.userData.resetY;
+          }
+        });
+      }
+
+      // Animasi Step 2: Air naik di batang
+      if(currentStep === 2) {
+        stemWaterGroup.children.forEach(p => {
+          p.position.y += p.userData.speed;
+          if(p.position.y > p.userData.maxY) {
+            p.position.y = p.userData.resetY;
+          }
+        });
+      }
+
+      // Animasi Step 3: CO2 masuk melayang ke daun
+      if(currentStep === 3) {
+        co2Group.children.forEach(p => {
+          p.userData.radius -= p.userData.speed;
+          p.position.x = Math.cos(p.userData.angle) * p.userData.radius;
+          p.position.z = Math.sin(p.userData.angle) * p.userData.radius;
+          p.position.y = p.userData.targetY;
+
+          if(p.userData.radius < 0.3) {
+            p.userData.radius = 4 + Math.random()*1.5;
+            p.userData.angle = Math.random() * Math.PI * 2;
+          }
+        });
+      }
+
+      // Animasi Step 4: Cahaya matahari berkilau
+      if(currentStep === 4) {
+        sunRayGroup.children.forEach((ray, idx) => {
+          ray.material.opacity = 0.4 + Math.sin(Date.now() * 0.005 + idx) * 0.3;
+        });
+      }
+
+      // Animasi Step 5: Oksigen melayang ke udara
+      if(currentStep === 5) {
+        o2Group.children.forEach(p => {
+          p.position.y += p.userData.speed;
+          p.position.x += Math.sin(p.position.y * 3) * 0.01;
+          if(p.position.y > 6) {
+            p.position.y = 3.0;
+            p.position.x = p.userData.startX;
+          }
+        });
+      }
+
       controls.update();
       renderer.render(scene, camera);
     }
+
     animate();
 
+    // Responsive Canvas
     window.addEventListener('resize', () => {
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
